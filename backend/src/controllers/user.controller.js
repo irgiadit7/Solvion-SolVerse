@@ -1,12 +1,14 @@
 import asyncHandler from "express-async-handler";
 import User from "../models/user.model.js";
 import Notification from "../models/notification.model.js";
-import { clerkClient, getAuth } from "@clerk/express";
+
+import { getAuth } from "@clerk/express";
+import { clerkClient } from "@clerk/express";
 
 export const getUserProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
   const user = await User.findOne({ username });
-  if (!user) return res.status(400).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ error: "User not found" });
 
   res.status(200).json({ user });
 });
@@ -26,7 +28,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
 export const syncUser = asyncHandler(async (req, res) => {
   const { userId } = getAuth(req);
 
-  //chek if user already exists in mongodb
+  // check if user already exists in mongodb
   const existingUser = await User.findOne({ clerkId: userId });
   if (existingUser) {
     return res
@@ -34,7 +36,7 @@ export const syncUser = asyncHandler(async (req, res) => {
       .json({ user: existingUser, message: "User already exists" });
   }
 
-  //create new user from clerk data
+  // create new user from Clerk data
   const clerkUser = await clerkClient.users.getUser(userId);
 
   const userData = {
@@ -42,7 +44,7 @@ export const syncUser = asyncHandler(async (req, res) => {
     email: clerkUser.emailAddresses[0].emailAddress,
     firstName: clerkUser.firstName || "",
     lastName: clerkUser.lastName || "",
-    userName: clerkUser.emailAddresses[0].emailAddress.split("@")[0],
+    username: clerkUser.emailAddresses[0].emailAddress.split("@")[0],
     profilePicture: clerkUser.imageUrl || "",
   };
 
