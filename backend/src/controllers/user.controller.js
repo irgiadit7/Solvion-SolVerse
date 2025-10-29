@@ -1,11 +1,9 @@
 import { clerkClient } from "@clerk/express";
 import User from "../models/user.model.js";
 
-// MODIFIKASI TOTAL: Fungsi syncUser
 export const syncUser = async (req, res) => {
   try {
     const { userId } = req.auth;
-    // Ambil data user yang dikirim dari mobile app (dari Langkah 2)
     const { email, username, firstName, lastName, profilePic } = req.body;
 
     // 1. Cek apakah user sudah ada di MongoDB
@@ -21,7 +19,6 @@ export const syncUser = async (req, res) => {
     if (email) {
       console.log(`Syncing NEW user ${email} from mobile data...`);
 
-      // Buat username default jika 'username' null (misal dari Google login)
       const newUsername =
         username ||
         `${firstName || ""}${lastName || ""}`.replace(/\s/g, "") ||
@@ -35,20 +32,22 @@ export const syncUser = async (req, res) => {
       };
 
       const newUser = await User.create(newUserData);
-      return res.status(201).json(newUser); // 201 = Created
-    
+      return res.status(201).json(newUser);
     } else {
-      // 3. Fallback (Jaga-jaga jika HP tidak kirim data)
-      // Ini adalah kode LAMA Anda yang menyebabkan race condition
-      console.warn(`SyncUser Fallback: No data from mobile. Fetching from Clerk API for user ${userId}. This might fail.`);
-      
+      console.warn(
+        `SyncUser Fallback: No data from mobile. Fetching from Clerk API for user ${userId}. This might fail.`
+      );
+
       const clerkUser = await clerkClient.users.getUser(userId);
 
       const clerkUsername =
         clerkUser.username ||
-        `${clerkUser.firstName || ""}${clerkUser.lastName || ""}`.replace(/\s/g, "") ||
+        `${clerkUser.firstName || ""}${clerkUser.lastName || ""}`.replace(
+          /\s/g,
+          ""
+        ) ||
         clerkUser.emailAddresses[0].emailAddress.split("@")[0];
-        
+
       const clerkEmail = clerkUser.emailAddresses[0].emailAddress;
       const clerkProfilePic = clerkUser.imageUrl;
 
@@ -58,18 +57,15 @@ export const syncUser = async (req, res) => {
         email: clerkEmail,
         profilePic: clerkProfilePic,
       };
-      
+
       const newUser = await User.create(newUserData);
       return res.status(201).json(newUser);
     }
   } catch (error) {
     console.error("Error in syncUser:", error.message);
-    // Kirim pesan error yang lebih jelas ke HP
     res.status(500).json({ error: error.message || "Internal server error" });
   }
 };
-
-// --- SISA FILE BIARKAN SAMA ---
 
 export const getUserProfile = async (req, res) => {
   try {
