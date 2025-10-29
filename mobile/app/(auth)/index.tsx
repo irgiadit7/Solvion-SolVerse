@@ -1,3 +1,4 @@
+
 import { useSocialAuth } from "@/hooks/useSocialAuth";
 import { ActivityIndicator, Image, Text, TouchableOpacity, View } from "react-native";
 
