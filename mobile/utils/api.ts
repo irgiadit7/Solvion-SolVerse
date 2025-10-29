@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 import { useAuth } from "@clerk/clerk-expo";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || "https://solvion-sol-verse.vercel.app/api";
+const API_BASE_URL ="https://solvion-sol-verse.vercel.app/api";
 // ! 🔥 localhost api would not work on your actual physical device
 // const API_BASE_URL = "http://localhost:5001/api";
 
@@ -43,4 +43,4 @@ export const postApi = {
 export const commentApi = {
   createComment: (api: AxiosInstance, postId: string, content: string) =>
     api.post(`/comments/post/${postId}`, { content }),
-};
+};  
