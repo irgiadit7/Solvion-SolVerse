@@ -1,102 +1,145 @@
-import asyncHandler from "express-async-handler";
-import User from "../models/user.model.js";
-import Notification from "../models/notification.model.js";
-
-import { getAuth } from "@clerk/express";
 import { clerkClient } from "@clerk/express";
+import User from "../models/user.model.js";
 
-export const getUserProfile = asyncHandler(async (req, res) => {
-  const { username } = req.params;
-  const user = await User.findOne({ username });
-  if (!user) return res.status(404).json({ error: "User not found" });
+// MODIFIKASI TOTAL: Fungsi syncUser
+export const syncUser = async (req, res) => {
+  try {
+    const { userId } = req.auth;
+    // Ambil data user yang dikirim dari mobile app (dari Langkah 2)
+    const { email, username, firstName, lastName, profilePic } = req.body;
 
-  res.status(200).json({ user });
-});
+    // 1. Cek apakah user sudah ada di MongoDB
+    const user = await User.findOne({ clerkId: userId });
 
-export const updateProfile = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
+    if (user) {
+      // User sudah ada, tidak perlu sync, langsung kembalikan 200 OK
+      return res.status(200).json(user);
+    }
 
-  const user = await User.findOneAndUpdate({ clerkId: userId }, req.body, { new: true });
+    // 2. Jika user BELUM ada, buat user baru dari data HP
+    // Cek apakah data email ada (sebagai penanda data dari HP valid)
+    if (email) {
+      console.log(`Syncing NEW user ${email} from mobile data...`);
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+      // Buat username default jika 'username' null (misal dari Google login)
+      const newUsername =
+        username ||
+        `${firstName || ""}${lastName || ""}`.replace(/\s/g, "") ||
+        email.split("@")[0];
 
-  res.status(200).json({ user });
-});
+      const newUserData = {
+        clerkId: userId,
+        username: newUsername,
+        email: email,
+        profilePic: profilePic,
+      };
 
-export const syncUser = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
+      const newUser = await User.create(newUserData);
+      return res.status(201).json(newUser); // 201 = Created
+    
+    } else {
+      // 3. Fallback (Jaga-jaga jika HP tidak kirim data)
+      // Ini adalah kode LAMA Anda yang menyebabkan race condition
+      console.warn(`SyncUser Fallback: No data from mobile. Fetching from Clerk API for user ${userId}. This might fail.`);
+      
+      const clerkUser = await clerkClient.users.getUser(userId);
 
-  // check if user already exists in mongodb
-  const existingUser = await User.findOne({ clerkId: userId });
-  if (existingUser) {
-    return res.status(200).json({ user: existingUser, message: "User already exists" });
+      const clerkUsername =
+        clerkUser.username ||
+        `${clerkUser.firstName || ""}${clerkUser.lastName || ""}`.replace(/\s/g, "") ||
+        clerkUser.emailAddresses[0].emailAddress.split("@")[0];
+        
+      const clerkEmail = clerkUser.emailAddresses[0].emailAddress;
+      const clerkProfilePic = clerkUser.imageUrl;
+
+      const newUserData = {
+        clerkId: userId,
+        username: clerkUsername,
+        email: clerkEmail,
+        profilePic: clerkProfilePic,
+      };
+      
+      const newUser = await User.create(newUserData);
+      return res.status(201).json(newUser);
+    }
+  } catch (error) {
+    console.error("Error in syncUser:", error.message);
+    // Kirim pesan error yang lebih jelas ke HP
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
+};
 
-  // create new user from Clerk data
-  const clerkUser = await clerkClient.users.getUser(userId);
+// --- SISA FILE BIARKAN SAMA ---
 
-  const userData = {
-    clerkId: userId,
-    email: clerkUser.emailAddresses[0].emailAddress,
-    firstName: clerkUser.firstName || "",
-    lastName: clerkUser.lastName || "",
-    username: clerkUser.emailAddresses[0].emailAddress.split("@")[0],
-    profilePicture: clerkUser.imageUrl || "",
-  };
+export const getUserProfile = async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username });
 
-  const user = await User.create(userData);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-  res.status(201).json({ user, message: "User created successfully" });
-});
-
-export const getCurrentUser = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
-  const user = await User.findOne({ clerkId: userId });
-
-  if (!user) return res.status(404).json({ error: "User not found" });
-
-  res.status(200).json({ user });
-});
-
-export const followUser = asyncHandler(async (req, res) => {
-  const { userId } = getAuth(req);
-  const { targetUserId } = req.params;
-
-  if (userId === targetUserId) return res.status(400).json({ error: "You cannot follow yourself" });
-
-  const currentUser = await User.findOne({ clerkId: userId });
-  const targetUser = await User.findById(targetUserId);
-
-  if (!currentUser || !targetUser) return res.status(404).json({ error: "User not found" });
-
-  const isFollowing = currentUser.following.includes(targetUserId);
-
-  if (isFollowing) {
-    // unfollow
-    await User.findByIdAndUpdate(currentUser._id, {
-      $pull: { following: targetUserId },
-    });
-    await User.findByIdAndUpdate(targetUserId, {
-      $pull: { followers: currentUser._id },
-    });
-  } else {
-    // follow
-    await User.findByIdAndUpdate(currentUser._id, {
-      $push: { following: targetUserId },
-    });
-    await User.findByIdAndUpdate(targetUserId, {
-      $push: { followers: currentUser._id },
-    });
-
-    // create notification
-    await Notification.create({
-      from: currentUser._id,
-      to: targetUserId,
-      type: "follow",
-    });
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error in getUserProfile:", error.message);
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
+};
 
-  res.status(200).json({
-    message: isFollowing ? "User unfollowed successfully" : "User followed successfully",
-  });
-});
+export const getCurrentUser = async (req, res) => {
+  try {
+    const { userId } = req.auth;
+    const user = await User.findOne({ clerkId: userId });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error in getCurrentUser:", error.message);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const { userId } = req.auth;
+    const { username, profilePic, bio } = req.body;
+
+    let user = await User.findOne({ clerkId: userId });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // check if username is already taken
+    if (username) {
+      const existingUser = await User.findOne({ username });
+      if (existingUser && existingUser.clerkId !== userId) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+
+      await clerkClient.users.updateUser(userId, { username });
+      user.username = username;
+    }
+
+    if (profilePic) {
+      user.profilePic = profilePic;
+    }
+
+    if (bio) {
+      user.bio = bio;
+    }
+
+    user = await user.save();
+    res.status(200).json(user);
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+    console.error("Error in updateProfile:", error.message);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+};
