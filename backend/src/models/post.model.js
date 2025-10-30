@@ -9,11 +9,16 @@ const postSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      maxLength: 280,
+      default: "",
     },
     image: {
       type: String,
       default: "",
+    },
+    // Tambahkan field untuk menyimpan aspect ratio
+    imageAspectRatio: {
+      type: Number,
+      default: null, // null berarti original/tidak di-crop
     },
     likes: [
       {

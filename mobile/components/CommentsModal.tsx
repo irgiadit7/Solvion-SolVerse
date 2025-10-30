@@ -1,6 +1,7 @@
 import { useComments } from "@/hooks/useComments";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Post } from "@/types";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -20,10 +21,24 @@ interface CommentsModalProps {
 const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
   const { commentText, setCommentText, createComment, isCreatingComment } = useComments();
   const { currentUser } = useCurrentUser();
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
 
   const handleClose = () => {
     onClose();
     setCommentText("");
+  };
+
+  // Fungsi untuk menghitung tinggi maksimal yang ideal
+  const getImageHeight = (aspectRatio: number) => {
+    const maxHeight = 400; // Tinggi maksimal dalam modal
+    const minHeight = 200; // Tinggi minimal dalam pixels
+    
+    // Untuk gambar portrait (tinggi > lebar), batasi tinggi
+    if (aspectRatio < 0.8) {
+      return maxHeight;
+    }
+    
+    return undefined;
   };
 
   return (
@@ -64,8 +79,17 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
                 {selectedPost.image && (
                   <Image
                     source={{ uri: selectedPost.image }}
-                    className="w-full h-48 rounded-2xl mb-3"
+                    className="w-full rounded-2xl mb-3"
                     resizeMode="cover"
+                    style={{
+                      height: getImageHeight(imageAspectRatio),
+                      maxHeight: 400,
+                      minHeight: 200,
+                    }}
+                    onLoad={(e) => {
+                      const { width, height } = e.nativeEvent.source;
+                      setImageAspectRatio(width / height);
+                    }}
                   />
                 )}
               </View>
@@ -96,7 +120,6 @@ const CommentsModal = ({ selectedPost, onClose }: CommentsModalProps) => {
           ))}
 
           {/* ADD COMMENT INPUT */}
-
           <View className="p-4 border-t border-gray-100">
             <View className="flex-row">
               <Image

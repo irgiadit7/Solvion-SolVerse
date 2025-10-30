@@ -1,7 +1,7 @@
-
 import { Post, User } from "@/types";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { AntDesign, Feather } from "@expo/vector-icons";
+import { useState } from "react";
 import { View, Text, Alert, Image, TouchableOpacity } from "react-native";
 
 interface PostCardProps {
@@ -14,6 +14,7 @@ interface PostCardProps {
 }
 
 const PostCard = ({ currentUser, onDelete, onLike, post, isLiked, onComment }: PostCardProps) => {
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
   const isOwnPost = post.user._id === currentUser._id;
 
   const handleDelete = () => {
@@ -25,6 +26,20 @@ const PostCard = ({ currentUser, onDelete, onLike, post, isLiked, onComment }: P
         onPress: () => onDelete(post._id),
       },
     ]);
+  };
+
+  // Fungsi untuk menghitung tinggi maksimal yang ideal
+  const getImageHeight = (aspectRatio: number) => {
+    const maxHeight = 500; // Tinggi maksimal dalam pixels
+    const minHeight = 200; // Tinggi minimal dalam pixels
+    
+    // Untuk gambar portrait (tinggi > lebar), batasi tinggi
+    if (aspectRatio < 0.8) {
+      return maxHeight;
+    }
+    
+    // Untuk gambar landscape atau square, biarkan natural dengan batas minimal
+    return undefined;
   };
 
   return (
@@ -59,8 +74,17 @@ const PostCard = ({ currentUser, onDelete, onLike, post, isLiked, onComment }: P
           {post.image && (
             <Image
               source={{ uri: post.image }}
-              className="w-full h-48 rounded-2xl mb-3"
+              className="w-full rounded-2xl mb-3"
               resizeMode="cover"
+              style={{
+                height: getImageHeight(imageAspectRatio),
+                maxHeight: 500,
+                minHeight: 200,
+              }}
+              onLoad={(e) => {
+                const { width, height } = e.nativeEvent.source;
+                setImageAspectRatio(width / height);
+              }}
             />
           )}
 

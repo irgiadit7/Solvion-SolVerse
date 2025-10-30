@@ -49,7 +49,7 @@ export const useCreatePost = () => {
     },
   });
 
-  const handleImagePicker = async (useCamera: boolean = false) => {
+  const handleImagePicker = async (useCamera: boolean = false): Promise<string | null> => {
     const permissionResult = useCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -57,13 +57,12 @@ export const useCreatePost = () => {
     if (permissionResult.status !== "granted") {
       const source = useCamera ? "camera" : "photo library";
       Alert.alert("Permission needed", `Please grant permission to access your ${source}`);
-      return;
+      return null;
     }
 
     const pickerOptions = {
-      allowsEditing: true,
-      aspect: [16, 9] as [number, number],
-      quality: 0.8,
+      allowsEditing: false, // Disable bawaan, kita akan crop manual
+      quality: 1, // Max quality untuk editing
     };
 
     const result = useCamera
@@ -73,7 +72,11 @@ export const useCreatePost = () => {
           mediaTypes: ["images"],
         });
 
-    if (!result.canceled) setSelectedImage(result.assets[0].uri);
+    if (!result.canceled) {
+      return result.assets[0].uri;
+    }
+    
+    return null;
   };
 
   const createPost = () => {
@@ -95,6 +98,7 @@ export const useCreatePost = () => {
     content,
     setContent,
     selectedImage,
+    setSelectedImage,
     isCreating: createPostMutation.isPending,
     pickImageFromGallery: () => handleImagePicker(false),
     takePhoto: () => handleImagePicker(true),

@@ -1,46 +1,59 @@
-export interface User {
+// Update Post type untuk menambahkan imageAspectRatio
+export interface Post {
   _id: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  profilePicture?: string;
+  user: {
+    _id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string;
+  };
+  content: string;
+  image?: string;
+  imageAspectRatio?: number | null; // Tambahkan field ini
+  likes: string[];
+  comments: Comment[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Comment {
   _id: string;
+  user: {
+    _id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string;
+  };
   content: string;
+  post: string;
   createdAt: string;
-  user: User;
+  updatedAt: string;
 }
 
-export interface Post {
+export interface User {
   _id: string;
-  content: string;
-  image?: string;
+  clerkId: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profilePicture: string;
+  bio?: string;
+  followers: string[];
+  following: string[];
   createdAt: string;
-  user: User;
-  likes: string[];
-  comments: Comment[];
+  updatedAt: string;
 }
 
 export interface Notification {
   _id: string;
-  from: {
-    username: string;
-    firstName: string;
-    lastName: string;
-    profilePicture?: string;
-  };
+  from: User;
   to: string;
   type: "like" | "comment" | "follow";
-  post?: {
-    _id: string;
-    content: string;
-    image?: string;
-  };
-  comment?: {
-    _id: string;
-    content: string;
-  };
+  post?: string;
+  read: boolean;
   createdAt: string;
+  updatedAt: string;
 }

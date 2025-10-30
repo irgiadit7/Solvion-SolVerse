@@ -74,10 +74,10 @@ export const createPost = asyncHandler(async (req, res) => {
 
   let imageUrl = "";
 
-  // upload image to Cloudinary if provided
+  // Upload image to Cloudinary if provided
   if (imageFile) {
     try {
-      // convert buffer to base64 for cloudinary
+      // Convert buffer to base64 for cloudinary
       const base64Image = `data:${imageFile.mimetype};base64,${imageFile.buffer.toString(
         "base64"
       )}`;
@@ -86,9 +86,11 @@ export const createPost = asyncHandler(async (req, res) => {
         folder: "social_media_posts",
         resource_type: "image",
         transformation: [
-          { width: 800, height: 600, crop: "limit" },
-          { quality: "auto" },
-          { format: "auto" },
+          // Hanya batasi lebar maksimal untuk menjaga performa
+          // Tinggi akan menyesuaikan secara otomatis (maintain aspect ratio)
+          { width: 1200, crop: "limit" },
+          { quality: "auto:good" },
+          { fetch_format: "auto" },
         ],
       });
       imageUrl = uploadResponse.secure_url;

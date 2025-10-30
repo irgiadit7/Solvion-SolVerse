@@ -1,7 +1,8 @@
 import axios, { AxiosInstance } from "axios";
 import { useAuth } from "@clerk/clerk-expo";
 
-const API_BASE_URL ="https://solvion-sol-verse.vercel.app/api";
+// const API_BASE_URL ="https://solvion-sol-verse.vercel.app/api";
+const API_BASE_URL = "http://localhost:5001/api"
 
 // this will basically create an authenticated api, pass the token into our headers
 export const createApiClient = (getToken: () => Promise<string | null>): AxiosInstance => {
