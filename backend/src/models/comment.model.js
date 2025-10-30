@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const commentSchema = new mongoose.Schema(
@@ -15,8 +14,16 @@ const commentSchema = new mongoose.Schema(
     },
     content: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.image;
+      },
       maxLength: 280,
+    },
+    image: {
+      type: String,
+      required: function () {
+        return !this.content;
+      },
     },
     likes: [
       {

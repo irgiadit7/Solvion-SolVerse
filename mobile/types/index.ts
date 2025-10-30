@@ -11,6 +11,7 @@ export interface Comment {
   content: string;
   createdAt: string;
   user: User;
+  image?: string;
 }
 
 export interface Post {
