@@ -1,6 +1,7 @@
 import { useCreatePost } from "@/hooks/useCreatePost";
 import { useUser } from "@clerk/clerk-expo";
 import { Feather } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -23,6 +24,17 @@ const PostComposer = () => {
   } = useCreatePost();
 
   const { user } = useUser();
+  const [previewRatio, setPreviewRatio] = useState(16 / 9);
+
+  useEffect(() => {
+    if (selectedImage) {
+      Image.getSize(selectedImage, (width, height) => {
+        if (height > 0) {
+          setPreviewRatio(width / height);
+        }
+      });
+    }
+  }, [selectedImage]);
 
   return (
     <View className="border-b border-gray-100 p-4 bg-white">
@@ -48,9 +60,10 @@ const PostComposer = () => {
         <View className="mt-3 ml-15">
           <View className="relative">
             <Image
-              source={{ uri: selectedImage }}
-              className="w-full h-48 rounded-2xl"
-              resizeMode="cover"
+          source={{ uri: selectedImage }}
+  className="w-full rounded-2xl"
+  style={{ aspectRatio: previewRatio }}
+  resizeMode="contain"
             />
             <TouchableOpacity
               className="absolute top-2 right-2 w-8 h-8 bg-black bg-opacity-60 rounded-full items-center justify-center"

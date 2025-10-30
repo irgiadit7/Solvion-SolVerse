@@ -62,7 +62,7 @@ export const useCreatePost = () => {
 
     const pickerOptions = {
       allowsEditing: true,
-      aspect: [16, 9] as [number, number],
+      // aspect: [16, 9] as [number, number],
       quality: 0.8,
     };
 

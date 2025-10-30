@@ -2,6 +2,7 @@
 import { Post, User } from "@/types";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { AntDesign, Feather } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import { View, Text, Alert, Image, TouchableOpacity } from "react-native";
 
 interface PostCardProps {
@@ -11,10 +12,22 @@ interface PostCardProps {
   onComment: (post: Post) => void;
   isLiked?: boolean;
   currentUser: User;
+  
 }
 
 const PostCard = ({ currentUser, onDelete, onLike, post, isLiked, onComment }: PostCardProps) => {
   const isOwnPost = post.user._id === currentUser._id;
+  const [imageRatio, setImageRatio] = useState(1)
+
+  useEffect(() => {
+    if (post.image) {
+      Image.getSize(post.image, (width, height) => {
+        if (height > 0) {
+          setImageRatio(width / height);
+        }
+      });
+    }
+  }, [post.image]);
 
   const handleDelete = () => {
     Alert.alert("Delete Post", "Are you sure you want to delete this post?", [
@@ -59,7 +72,8 @@ const PostCard = ({ currentUser, onDelete, onLike, post, isLiked, onComment }: P
           {post.image && (
             <Image
               source={{ uri: post.image }}
-              className="w-full h-48 rounded-2xl mb-3"
+              className="w- rounded-2xl mb-3"
+              style={{ aspectRatio: imageRatio }}
               resizeMode="cover"
             />
           )}
